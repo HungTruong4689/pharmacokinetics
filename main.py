@@ -5,6 +5,10 @@ from scipy.optimize import minimize
 import matplotlib.pyplot as plt
 from sklearn.metrics import r2_score, mean_squared_error
 
+# --- Dose Finder and AUC Calculation Extension ---
+from scipy.optimize import minimize
+from scipy.integrate import simps
+
 # Two-compartment ODE system
 # Define the ODE system for a two-compartment model
 # ODE stands for "Ordinary Differential Equation"
@@ -550,6 +554,26 @@ plot_concentrations_and_boxplot(data, pop_params)
 
 
 
+
+
+# Function to estimate dose to reach target Cmin
+def find_dose_for_target_cmin(target_cmin, patient_data, base_params):
+    def objective(dose):
+        pdata = patient_data.copy()
+        pdata.loc[pdata['evid'] == 1, 'amt'] = dose
+        times, concs = solve_two_compartment(pdata, base_params)
+        pred_cmin = np.min(concs)
+        return (pred_cmin - target_cmin) ** 2
+
+    result = minimize(objective, x0=[1000], bounds=[(100, 3000)])
+    return result.x[0] if result.success else None
+
+# Function to calculate AUC from concentration-time profile
+def calculate_auc(time_points, concentrations):
+    return simps(concentrations, time_points)
+
+
+
 ###SIMULATE FOR NEW PATIENT
 # Assuming you have new patient data
 new_patient = pd.DataFrame({
@@ -577,3 +601,38 @@ plt.grid(True)
 plt.legend()
 plt.show()
 ###SIMULATE FOR NEW PATIENT
+
+# Choose target Cmin
+target_cmin = 10.0  # mg/L
+
+def simulate_dose_for_target_cmin(target_cmin, base_patient_data, pop_params):
+    # Clone the input patient data to avoid modifying original
+    patient = base_patient_data.copy()
+
+    # Step 1: Estimate the dose
+    estimated_dose = find_dose_for_target_cmin(target_cmin, patient, pop_params)
+    print(f"Estimated dose to reach Cmin {target_cmin} mg/L: {estimated_dose:.2f} mg")
+
+    # Step 2: Apply the dose to the patient's dosing row
+    patient.loc[patient['evid'] == 1, 'amt'] = estimated_dose
+
+    # Step 3: Simulate the model with the estimated dose
+    times, concs = solve_two_compartment(patient, pop_params)
+
+    # Step 4: Calculate AUC
+    auc = calculate_auc(times, concs)
+    print(f"Predicted AUC: {auc:.2f} mg·h/L")
+
+    # Step 5: Plot result
+    plt.plot(times, concs, label='Predicted Concentration', marker='o')
+    plt.xlabel("Time (h)")
+    plt.ylabel("Concentration (mg/L)")
+    plt.title(f"New Patient Simulation\nCmin Target: {target_cmin} mg/L | AUC: {auc:.2f} mg·h/L")
+    plt.axhline(target_cmin, color='red', linestyle='--', label='Target Cmin')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+##Run the simulation for the new patient
+simulate_dose_for_target_cmin(target_cmin=10.0, base_patient_data=new_patient, pop_params=pop_params)
