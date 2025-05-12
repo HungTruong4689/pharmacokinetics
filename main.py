@@ -4,6 +4,7 @@ from scipy.integrate import solve_ivp
 from scipy.optimize import minimize
 import matplotlib.pyplot as plt
 from sklearn.metrics import r2_score, mean_squared_error
+import json
 
 # --- Dose Finder and AUC Calculation Extension ---
 from scipy.optimize import minimize
@@ -480,6 +481,10 @@ print("Estimated Population Parameters:", pop_params)
 # Convert to DataFrame for plotting
 # Collect observed vs predicted data
 
+# Save to file
+with open("pop_params.json", "w") as f:
+    json.dump(pop_params.tolist(), f)
+
 #######R^2 error and RMSE
 observed_vs_predicted = []
 
@@ -542,15 +547,15 @@ shrinkage = calculate_shrinkage(individuals, pop_params)
 print(f"Shrinkage: {shrinkage:.2f}%")
 
 # Plot the observed vs individual predicted concentrations
-plot_observed_vs_individual(data, individuals)
+#plot_observed_vs_individual(data, individuals)
 # Plot the observed vs population predicted concentrations
-plot_observed_vs_population(data, pop_params)
-plot_cwres(data, individuals, pop_params)
+#plot_observed_vs_population(data, pop_params)
+#plot_cwres(data, individuals, pop_params)
 # Perform Visual Predictive Check
-vpc(data, pop_params, n_simulations=1000, percentile_range=(5, 50, 95))
+#vpc(data, pop_params, n_simulations=1000, percentile_range=(5, 50, 95))
 
 #box plot
-plot_concentrations_and_boxplot(data, pop_params)
+# plot_concentrations_and_boxplot(data, pop_params)
 
 
 
@@ -593,13 +598,13 @@ predicted = predict_new_patient(new_patient, pop_params)
 print(predicted)
 
 # Optional: plot prediction
-plt.plot(predicted['time'], predicted['pred_conc'], marker='o', label='Predicted Concentration')
-plt.xlabel("Time (h)")
-plt.ylabel("Concentration")
-plt.title("Prediction for New Patient")
-plt.grid(True)
-plt.legend()
-plt.show()
+# plt.plot(predicted['time'], predicted['pred_conc'], marker='o', label='Predicted Concentration')
+# plt.xlabel("Time (h)")
+# plt.ylabel("Concentration")
+# plt.title("Prediction for New Patient")
+# plt.grid(True)
+# plt.legend()
+# plt.show()
 ###SIMULATE FOR NEW PATIENT
 
 # Choose target Cmin
@@ -635,4 +640,4 @@ def simulate_dose_for_target_cmin(target_cmin, base_patient_data, pop_params):
     plt.show()
 
 ##Run the simulation for the new patient
-simulate_dose_for_target_cmin(target_cmin=10.0, base_patient_data=new_patient, pop_params=pop_params)
+# simulate_dose_for_target_cmin(target_cmin=10.0, base_patient_data=new_patient, pop_params=pop_params)
